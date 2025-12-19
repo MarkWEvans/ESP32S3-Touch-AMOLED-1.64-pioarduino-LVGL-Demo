@@ -19,7 +19,8 @@ This folder is a **PlatformIO** project that ports the repo’s Arduino LVGL dem
 
 ### How to build
 
-- Open this repo in PlatformIO
+- Install **pioarduino** (a community fork of PlatformIO IDE for VS Code): https://marketplace.visualstudio.com/items?itemName=pioarduino.pioarduino-ide
+- Open this folder in **VS Code** (with the pioarduino extension)
 - Select the `pioarduino-lvgl-amoled164` project folder
 - Build/Upload using the `amoled164` environment
 
