@@ -1,0 +1,50 @@
+{
+  "name": "ESP32-S3 Touch AMOLED 1.64 (8MB flash, 8MB PSRAM)",
+  "vendor": "Custom",
+  "url": "",
+  "hardware": {
+    "chip": "esp32s3",
+    "cpu": "xtensa",
+    "clock": 240000000,
+    "flash": 16000000,
+    "ram": 327680
+  },
+  "build": {
+    "core": "esp32",
+    "variant": "esp32s3",
+    "mcu": "esp32s3",
+    "f_cpu": "240000000L",
+    "f_flash": "80000000L",
+    "f_image": "80000000L",
+    "f_boot": "80000000L",
+    "flash_mode": "qio",
+    "arduino": {
+      "ldscript": "esp32s3_out.ld",
+      "memory_type": "qio_opi"
+    },
+    "extra_flags": [
+      "-DBOARD_HAS_PSRAM"
+    ]
+  },
+  "frameworks": [
+    "arduino"
+  ],
+  "platforms": [
+    "espressif32"
+  ],
+  "upload": {
+    "flash_size": "16MB",
+    "maximum_ram_size": 327680,
+    "maximum_size": 12582912,
+    "require_upload_port": true,
+    "speed": 921600
+  },
+  "debug": {
+    "default_tool": "esp-builtin",
+    "onboard_tools": [
+      "esp-builtin"
+    ]
+  }
+}
+
+
