@@ -7,7 +7,9 @@
 #include "esp_lcd_sh8601.h"
 #include "lcd_config.h"
 #include "FT3168.h"
-#include "ui_demo.h"
+#include "ui.h"
+
+void app_squareline_glue_init(void);
 
 static SemaphoreHandle_t lvgl_mux = NULL;
 #define LCD_HOST SPI2_HOST
@@ -22,7 +24,8 @@ static const sh8601_lcd_init_cmd_t lcd_init_cmds[] = {
     {0x63, (uint8_t[]){0xFF}, 1, 1},
     {0x51, (uint8_t[]){0x00}, 1, 1},
     {0x29, (uint8_t[]){0x00}, 0, 10},
-    {0x51, (uint8_t[]){0xFF}, 1, 0},
+    // Keep brightness OFF during boot to avoid a white flash before the first LVGL frame.
+    {0x51, (uint8_t[]){0x00}, 1, 0},
 };
 
 static bool example_notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io,
@@ -37,6 +40,18 @@ static bool example_notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io,
 
 static void example_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map) {
   esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t)drv->user_data;
+  // If LVGL is configured for non-swapped RGB565, swap bytes here before pushing to the panel
+  // (SPI/QSPI panels typically want MSB-first color bytes on the wire).
+#if (LV_COLOR_DEPTH == 16) && (LV_COLOR_16_SWAP == 0)
+  const int w = area->x2 - area->x1 + 1;
+  const int h = area->y2 - area->y1 + 1;
+  const size_t px = (w > 0 && h > 0) ? (size_t)w * (size_t)h : 0;
+  uint16_t *p = (uint16_t *)color_map;
+  for (size_t i = 0; i < px; i++) {
+    const uint16_t v = p[i];
+    p[i] = (uint16_t)((v << 8) | (v >> 8));
+  }
+#endif
   const int offsetx1 = area->x1 + 0x14;
   const int offsetx2 = area->x2 + 0x14;
   const int offsety1 = area->y1;
@@ -78,12 +93,29 @@ static void example_lvgl_touch_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
   (void)drv;
   uint16_t tp_x, tp_y;
   uint8_t win = getTouch(&tp_x, &tp_y);
+  static uint32_t s_last_touch_log_ms = 0;
+  static bool s_last_state = false;
+  
   if (win) {
     data->point.x = tp_x;
     data->point.y = tp_y;
     data->state = LV_INDEV_STATE_PRESSED;
+    
+    // Log touch events (throttled to avoid spam)
+    uint32_t now = millis();
+    if (!s_last_state || (now - s_last_touch_log_ms) > 100) {
+      Serial.printf("Touch: pressed at (%d, %d)\n", tp_x, tp_y);
+      s_last_touch_log_ms = now;
+    }
+    s_last_state = true;
   } else {
     data->state = LV_INDEV_STATE_RELEASED;
+    
+    // Log touch release
+    if (s_last_state) {
+      Serial.println("Touch: released");
+      s_last_state = false;
+    }
   }
 }
 
@@ -202,7 +234,8 @@ void lcd_lvgl_Init(void) {
               EXAMPLE_LVGL_TASK_PRIORITY, NULL);
 
   if (example_lvgl_lock(-1)) {
-    ui_demo_init();
+    ui_init();
+    app_squareline_glue_init();
     example_lvgl_unlock();
   }
 }

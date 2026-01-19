@@ -1,0 +1,11 @@
+SET(SOURCES ui_Screen1.c
+    ui_Screen2.c
+    ui_Screen3.c
+    ui.c
+    ui_comp_hook.c
+    ui_helpers.c
+    ui_img_battery_sheet_row_png.c
+    ui_img_wifi_sheet_32_row_png.c
+    ui_img_linked_32_png.c)
+
+add_library(ui ${SOURCES})

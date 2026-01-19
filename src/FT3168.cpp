@@ -1,46 +1,67 @@
 #include "FT3168.h"
 
-#include <stdlib.h>
-
-#include "esp_err.h"
 #include "lcd_config.h"
 
-#define TEST_I2C_PORT I2C_NUM_0
+// Use Arduino I2C (TwoWire) to avoid mixing ESP-IDF legacy I2C with driver_ng.
+static TwoWire *s_touchWire = &Wire;
 
 static uint8_t I2C_writr_buff(uint8_t addr, uint8_t reg, uint8_t *buf, uint8_t len) {
-  uint8_t ret;
-  uint8_t *pbuf = (uint8_t *)malloc(len + 1);
-  pbuf[0] = reg;
-  for (uint8_t i = 0; i < len; i++) {
-    pbuf[i + 1] = buf[i];
+  s_touchWire->beginTransmission(addr);
+  s_touchWire->write(reg);
+  if (buf && len) {
+    s_touchWire->write(buf, len);
   }
-  ret = i2c_master_write_to_device(TEST_I2C_PORT, addr, pbuf, len + 1, 1000);
-  free(pbuf);
-  pbuf = NULL;
-  return ret;
+  uint8_t err = s_touchWire->endTransmission(true); // 0 == success
+  return err;
 }
 
 static uint8_t I2C_read_buff(uint8_t addr, uint8_t reg, uint8_t *buf, uint8_t len) {
-  uint8_t ret;
-  ret = i2c_master_write_read_device(TEST_I2C_PORT, addr, &reg, 1, buf, len, 1000);
-  return ret;
+  if (!buf || !len) return 0;
+
+  s_touchWire->beginTransmission(addr);
+  s_touchWire->write(reg);
+  // Use STOP here to avoid the "NonStop" path (i2cWriteReadNonStop) which can return INVALID_STATE.
+  uint8_t err = s_touchWire->endTransmission(true);
+  if (err != 0) {
+    return err;
+  }
+
+  size_t readLen = s_touchWire->requestFrom((int)addr, (int)len);
+  if (readLen != len) {
+    return 1;
+  }
+  for (uint8_t i = 0; i < len; i++) {
+    buf[i] = (uint8_t)s_touchWire->read();
+  }
+  return 0;
 }
 
 void Touch_Init(void) {
-  i2c_config_t conf = {
-      .mode = I2C_MODE_MASTER,
-      .sda_io_num = EXAMPLE_PIN_NUM_TOUCH_SDA,
-      .scl_io_num = EXAMPLE_PIN_NUM_TOUCH_SCL,
-      .sda_pullup_en = GPIO_PULLUP_ENABLE,
-      .scl_pullup_en = GPIO_PULLUP_ENABLE,
-      .master = {.clk_speed = 300 * 1000},
-      .clk_flags = 0,
-  };
-  ESP_ERROR_CHECK(i2c_param_config(TEST_I2C_PORT, &conf));
-  ESP_ERROR_CHECK(i2c_driver_install(TEST_I2C_PORT, conf.mode, 0, 0, 0));
+  // Wire is initialized in setup() (main.cpp). Avoid (re)initializing I2C here
+  // because it can invalidate other I2C instances (e.g. Wire1) on some cores.
+  s_touchWire = &Wire;
 
+  // Wait for touch controller to be ready after power-on
+  delay(50);
+  
+  // Try to initialize the touch controller with retries
   uint8_t data = 0x00;
-  I2C_writr_buff(I2C_ADDR_FT3168, 0x00, &data, 1); // Switch to normal mode
+  uint8_t retries = 5;
+  uint8_t err = 0xFF;
+  
+  while (retries > 0 && err != 0) {
+    err = I2C_writr_buff(I2C_ADDR_FT3168, 0x00, &data, 1); // Switch to normal mode
+    if (err != 0) {
+      delay(20); // Wait before retry
+      retries--;
+    }
+  }
+  
+  if (err == 0) {
+    delay(50); // Additional delay after successful init to let controller stabilize
+  } else {
+    Serial.printf("FT3168: Touch init failed after retries (error: %d)\n", err);
+  }
 }
 
 uint8_t getTouch(uint16_t *x, uint16_t *y) {
