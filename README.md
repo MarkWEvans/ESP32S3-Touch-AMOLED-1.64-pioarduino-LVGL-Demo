@@ -34,5 +34,3 @@ If your AMOLED board needs a different PlatformIO `board` (USB settings, flash/p
 
 Author: Mark Evans  
 For more information about the project, visit [markevans.info](https://markevans.info/).
-
-
