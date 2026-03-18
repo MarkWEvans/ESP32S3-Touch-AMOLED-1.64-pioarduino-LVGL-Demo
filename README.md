@@ -2,7 +2,7 @@
 
 ![Waveshare ESP32-S3-Touch-AMOLED-1.64 board image](https://www.waveshare.com/img/devkit/ESP32-S3-Touch-AMOLED-1.64/ESP32-S3-Touch-AMOLED-1.64-1_460.jpg)
 
-This folder is a **PlatformIO** project that ports the repo’s Arduino LVGL demo (`Arduino/examples/06_LVGL_Test`) to **pioarduino**.
+This is a **PlatformIO** project targeting the Waveshare ESP32-S3 Touch AMOLED 1.64, using the **pioarduino** platform and **LVGL 8.4** for the UI.
 
 ### Board links
 
@@ -15,13 +15,14 @@ This folder is a **PlatformIO** project that ports the repo’s Arduino LVGL dem
 - **Display**: SH8601 AMOLED over QSPI (`GPIO9/10/11/12/13/14`, reset `GPIO21`)
 - **Touch**: FT3168 over I2C (`SDA GPIO47`, `SCL GPIO48`, addr `0x38`)
 - **LVGL**: standard PlatformIO Registry library `lvgl/lvgl@8.4.0` + local config in `include/lv_conf.h`
-- **UI**: a small in-project demo screen (`src/ui_demo.c`) instead of `lv_demo_widgets()` (the registry `lvgl` package doesn’t ship demo sources)
+- **UI**: a small in-project demo screen (`src/ui_demo.c`)
 
 ### How to build
 
-- Install **pioarduino** (a community fork of PlatformIO IDE for VS Code): https://marketplace.visualstudio.com/items?itemName=pioarduino.pioarduino-ide
-- Open this folder in **VS Code** (with the pioarduino extension)
-- Select the `pioarduino-lvgl-amoled164` project folder
+The project can be built using either **Cursor IDE** or **VS Code**, both with the pioarduino extension:
+
+- Install **pioarduino**: https://marketplace.visualstudio.com/items?itemName=pioarduino.pioarduino-ide
+- Open this folder in **Cursor** or **VS Code**
 - Build/Upload using the `amoled164` environment
 
 ### If your board definition differs
@@ -34,5 +35,3 @@ If your AMOLED board needs a different PlatformIO `board` (USB settings, flash/p
 
 Author: Mark Evans  
 For more information about the project, visit [markevans.info](https://markevans.info/).
-
-
