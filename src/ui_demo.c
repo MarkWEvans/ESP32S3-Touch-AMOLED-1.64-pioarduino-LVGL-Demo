@@ -6,8 +6,6 @@
 #include "lcd_config.h"
 
 static lv_obj_t *scr;
-static lv_obj_t *title;
-static lv_obj_t *lbl_backlight;
 
 static void backlight_slider_cb(lv_event_t *e) {
   lv_obj_t *slider = lv_event_get_target(e);
@@ -24,20 +22,21 @@ static void invert_cb(lv_event_t *e) {
   lv_color_t bg = inverted ? lv_color_black() : lv_color_white();
   lv_color_t fg = inverted ? lv_color_white() : lv_color_black();
 
+  // Set both on the screen object — labels inherit text_color automatically,
+  // reducing separate invalidations and preventing partial-redraw flicker.
   lv_obj_set_style_bg_color(scr, bg, LV_PART_MAIN);
-  lv_obj_set_style_text_color(title, fg, LV_PART_MAIN);
-  lv_obj_set_style_text_color(lbl_backlight, fg, LV_PART_MAIN);
+  lv_obj_set_style_text_color(scr, fg, LV_PART_MAIN);
 }
 
 void ui_demo_init(void) {
   scr = lv_scr_act();
 
-  title = lv_label_create(scr);
+  lv_obj_t *title = lv_label_create(scr);
   lv_label_set_text(title, "ESP32-S3 Touch AMOLED 1.64");
-  lv_obj_set_style_text_font(title, &lv_font_montserrat_22, LV_PART_MAIN);
+  lv_obj_set_style_text_font(title, &lv_font_montserrat_28, LV_PART_MAIN);
   lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
 
-  lbl_backlight = lv_label_create(scr);
+  lv_obj_t *lbl_backlight = lv_label_create(scr);
   lv_label_set_text(lbl_backlight, "Backlight");
   lv_obj_set_style_text_font(lbl_backlight, &lv_font_montserrat_22, LV_PART_MAIN);
   lv_obj_align(lbl_backlight, LV_ALIGN_TOP_LEFT, 10, 70);
